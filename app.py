@@ -52,7 +52,7 @@ DEFAULT_CONTEXT = {
 
 POSSIBLE_CLASSIF = ["classif", "clasificacion", "clasificación", "naturaleza", "nature", "categoria", "categoría", "tipo gasto", "expense type"]
 POSSIBLE_CC = ["cc", "centro costo", "centro de costo", "cost center", "resp", "responsable", "ceco"]
-POSSIBLE_BUDGET_FY = ["budget fy", "budget_fy", "fy25", "budget total", "presupuesto fy", "presupuesto anual"]
+POSSIBLE_BUDGET_FY = ["budget fy", "budget_fy", "fy25", "fy26", "fy27", "fy28", "fy29", "fy30", "budget total", "presupuesto fy", "presupuesto anual"]
 POSSIBLE_FORECAST_FY = ["forecast fy", "forecast_fy", "forecast actual", "proyeccion fy", "proyección fy"]
 
 
@@ -157,10 +157,50 @@ def context_key(value: object) -> str:
     return "Other"
 
 
+def clean_sheet_headers(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Corrige hojas donde la primera fila real de encabezados quedó dentro de los datos.
+    Ejemplo: hoja Forecast 5+7 con columnas Unnamed y fila 0 = Resp, Desc Resp, Jan-26, etc.
+    """
+    df = df.copy()
+
+    # Si ya tiene columnas correctas, no hacer nada
+    cols_norm = [norm_txt(c) for c in df.columns]
+    if "resp" in cols_norm and any("jan" in c or "ene" in c for c in cols_norm):
+        return df
+
+    # Buscar una fila que parezca encabezado real
+    max_rows = min(10, len(df))
+    for i in range(max_rows):
+        row_values = [norm_txt(x) for x in df.iloc[i].tolist()]
+        row_join = " ".join(row_values)
+
+        has_resp = "resp" in row_values
+        has_cc = "cc" in row_values
+        has_month = any(
+            any(alias in cell for alias in ["jan", "ene", "feb", "mar", "apr", "abr", "may", "jun", "jul", "aug", "ago", "sep", "oct", "nov", "dec", "dic"])
+            for cell in row_values
+        )
+
+        if has_resp and has_cc and has_month:
+            new_cols = df.iloc[i].astype(str).tolist()
+            df = df.iloc[i + 1:].copy()
+            df.columns = new_cols
+            df = df.dropna(how="all")
+            df = df.loc[:, ~pd.Index(df.columns).astype(str).str.startswith("nan")]
+            return df.reset_index(drop=True)
+
+    return df
+
+
 @st.cache_data(show_spinner=False)
 def read_excel_sheets(uploaded_file) -> Dict[str, pd.DataFrame]:
     xls = pd.ExcelFile(uploaded_file)
-    return {sheet: pd.read_excel(uploaded_file, sheet_name=sheet) for sheet in xls.sheet_names}
+    sheets = {}
+    for sheet in xls.sheet_names:
+        raw = pd.read_excel(uploaded_file, sheet_name=sheet)
+        sheets[sheet] = clean_sheet_headers(raw)
+    return sheets
 
 
 def prepare_data(
