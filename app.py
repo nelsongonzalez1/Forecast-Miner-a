@@ -504,7 +504,25 @@ st.markdown(
     si corresponde a eficiencia real, retraso operacional o reprogramación presupuestaria.
     """
 )
+st.subheader("📌 Hallazgos ejecutivos")
 
+st.markdown(f"""
+- El Forecast FY Modelo proyecta un cierre de **US$ {forecast_total/1_000_000:,.1f} MM**.
+- El Budget FY corresponde a **US$ {budget_total/1_000_000:,.1f} MM**.
+- La desviación estimada frente al presupuesto es de **US$ {var_total/1_000_000:,.1f} MM**, equivalente a **{(var_total/budget_total)*100:,.1f}%**.
+- Las principales desviaciones se concentran en las categorías con mayor peso presupuestario, lo que permite priorizar acciones de control.
+- El modelo permite anticipar riesgos de sobrejecución o subejecución antes del cierre anual.
+""")
+
+st.subheader("🧭 Conclusiones y recomendaciones")
+
+st.markdown("""
+El modelo Forecast 5+7 permite proyectar el cierre anual combinando ejecución real acumulada, presupuesto restante y una curva no lineal ajustada al comportamiento reciente del gasto.
+
+Se recomienda focalizar el control presupuestario en las partidas con mayor desviación respecto al Budget FY, especialmente aquellas asociadas a procesos críticos de la operación minera como energía, combustible, mantenimiento, repuestos y contratistas.
+
+Como mejora de gestión, se propone implementar alertas tempranas por naturaleza de gasto y centro de costo, de modo que las áreas responsables puedan tomar decisiones correctivas antes del cierre mensual.
+""")
 st.subheader("📄 Resultado detallado")
 cols_to_show = [c for c in extra_dims if c in filtered.columns] + ["Naturaleza", "Contexto_Mina", "Actual_YTD", "Budget_YTD", "Budget_Remaining", "Forecast_Remaining", "Budget_FY_Model", "Forecast_FY_Modelo", "Var_vs_Budget", "Var_vs_Budget_%", "Recomendacion", "Justificacion_Mina"]
 cols_to_show = list(dict.fromkeys([c for c in cols_to_show if c in filtered.columns]))
