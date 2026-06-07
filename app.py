@@ -555,11 +555,59 @@ fig_waterfall.update_layout(
 
 st.plotly_chart(fig_waterfall, use_container_width=True)
 
-st.markdown(f"""
-**Interpretación:**  
-El gráfico cascada muestra cómo las principales categorías explican la diferencia entre el **Budget FY** y el **Forecast FY Modelo**.  
-Las barras positivas representan partidas que aumentan el gasto proyectado, mientras que las barras negativas representan partidas que reducen el gasto respecto al presupuesto.  
-El resultado final corresponde a un Forecast FY de **{money(forecast_total)}**, con una desviación total de **{money(var_total)}** equivalente a **{var_pct:.1%}**.
+# =========================
+# INTERPRETACIÓN AUTOMÁTICA DEL WATERFALL
+# =========================
+
+if len(waterfall_items) > 0:
+
+    top_pos = waterfall_items[waterfall_items["Var_vs_Budget"] > 0].sort_values(
+        "Var_vs_Budget", ascending=False
+    )
+
+    top_neg = waterfall_items[waterfall_items["Var_vs_Budget"] < 0].sort_values(
+        "Var_vs_Budget", ascending=True
+    )
+
+    texto_pos = ""
+    texto_neg = ""
+
+    if len(top_pos) > 0:
+        mayor_pos = top_pos.iloc[0]
+        texto_pos = f"""
+- La mayor desviación positiva corresponde a **{mayor_pos[chart_dim]}**, con un aumento de **{money(mayor_pos["Var_vs_Budget"])}** respecto al presupuesto.
+"""
+    else:
+        texto_pos = "- No se observan categorías con desviación positiva relevante respecto al presupuesto.\n"
+
+    if len(top_neg) > 0:
+        mayor_neg = top_neg.iloc[0]
+        texto_neg = f"""
+- La mayor desviación negativa corresponde a **{mayor_neg[chart_dim]}**, con una reducción de **{money(mayor_neg["Var_vs_Budget"])}** respecto al presupuesto.
+"""
+    else:
+        texto_neg = "- No se observan categorías con desviación negativa relevante respecto al presupuesto.\n"
+
+    if var_total < 0:
+        conclusion_var = "El modelo proyecta una **subejecución presupuestaria**, es decir, un cierre anual menor al presupuesto aprobado."
+    elif var_total > 0:
+        conclusion_var = "El modelo proyecta una **sobreejecución presupuestaria**, es decir, un cierre anual mayor al presupuesto aprobado."
+    else:
+        conclusion_var = "El modelo proyecta un cierre anual alineado con el presupuesto aprobado."
+
+    st.markdown(f"""
+### Interpretación automática
+
+El gráfico cascada explica cómo las principales categorías construyen la diferencia entre el **Budget FY** y el **Forecast FY Modelo**.
+
+- El Budget FY considerado es **{money(budget_total)}**.
+- El Forecast FY Modelo proyectado es **{money(forecast_total)}**.
+- La desviación total estimada es **{money(var_total)}**, equivalente a **{var_pct:.1%}** del presupuesto anual.
+{texto_pos}
+{texto_neg}
+{conclusion_var}
+
+Desde una perspectiva de gestión, estas categorías deben priorizarse en el análisis presupuestario, ya que explican las principales variaciones del forecast frente al presupuesto.
 """)
 st.subheader("✅ Propuesta formal de mejora")
 st.markdown(
