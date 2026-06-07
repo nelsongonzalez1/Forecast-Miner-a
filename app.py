@@ -494,7 +494,73 @@ if len(summary) > 0:
     - La mayor subejecución proyectada está en **{top_under[chart_dim]}**, con **{money(top_under['Var_vs_Budget'])}** respecto al Budget.
     - El forecast total del filtro seleccionado queda en **{money(forecast_total)}**, equivalente a una desviación de **{var_pct:.1%}** contra el presupuesto anual.
     """)
+# =========================
+# GRÁFICO CASCADA / WATERFALL
+# =========================
 
+st.subheader("🌊 Gráfico cascada: explicación de la variación presupuestaria")
+
+# Agrupar por la dimensión seleccionada del dashboard
+waterfall_df = summary.copy()
+
+# Ordenar desviaciones: mayores aumentos y mayores disminuciones
+top_over = waterfall_df[waterfall_df["Var_vs_Budget"] > 0].sort_values(
+    "Var_vs_Budget", ascending=False
+).head(3)
+
+top_under = waterfall_df[waterfall_df["Var_vs_Budget"] < 0].sort_values(
+    "Var_vs_Budget", ascending=True
+).head(3)
+
+waterfall_items = pd.concat([top_over, top_under])
+
+# Valores inicial y final
+inicio = budget_total
+final = forecast_total
+
+labels = ["Budget FY"] + waterfall_items[chart_dim].astype(str).tolist() + ["Forecast FY"]
+values = [inicio] + waterfall_items["Var_vs_Budget"].tolist() + [final]
+
+measure = ["absolute"] + ["relative"] * len(waterfall_items) + ["total"]
+
+fig_waterfall = go.Figure(
+    go.Waterfall(
+        name="Variación",
+        orientation="v",
+        measure=measure,
+        x=labels,
+        y=values,
+        text=[
+            money(inicio)
+        ] + [
+            money(v) for v in waterfall_items["Var_vs_Budget"]
+        ] + [
+            money(final)
+        ],
+        textposition="outside",
+        connector={"line": {"color": "gray"}},
+        increasing={"marker": {"color": "#4C78A8"}},
+        decreasing={"marker": {"color": "#E45756"}},
+        totals={"marker": {"color": "#72B7B2"}},
+    )
+)
+
+fig_waterfall.update_layout(
+    title="Explicación de la variación entre Budget FY y Forecast FY",
+    yaxis_title="Monto",
+    xaxis_title="Categoría",
+    showlegend=False,
+    height=520,
+)
+
+st.plotly_chart(fig_waterfall, use_container_width=True)
+
+st.markdown(f"""
+**Interpretación:**  
+El gráfico cascada muestra cómo las principales categorías explican la diferencia entre el **Budget FY** y el **Forecast FY Modelo**.  
+Las barras positivas representan partidas que aumentan el gasto proyectado, mientras que las barras negativas representan partidas que reducen el gasto respecto al presupuesto.  
+El resultado final corresponde a un Forecast FY de **{money(forecast_total)}**, con una desviación total de **{money(var_total)}** equivalente a **{var_pct:.1%}**.
+""")
 st.subheader("✅ Propuesta formal de mejora")
 st.markdown(
     """
